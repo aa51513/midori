@@ -1,8 +1,8 @@
 [package]
 edition = "2018"
-name = "midori"
-version = "0.6.2"
-authors = ["zephyr <i@zephyr.moe>"]
+name = "roma"
+version = "0.6.4"
+authors = ["aa51513 <aa51513@github.com>"]
 license = "MIT"
 
 [profile.release]

@@ -1,50 +1,36 @@
 use std::io::{Result, Error, ErrorKind};
-use std::net::{IpAddr};
+use std::net::IpAddr;
 
 use futures::executor;
 use trust_dns_resolver::TokioAsyncResolver;
-use trust_dns_resolver::config::{
-    ResolverConfig, ResolverOpts, LookupIpStrategy, NameServerConfig,
-};
+use trust_dns_resolver::config::{ResolverConfig, ResolverOpts, LookupIpStrategy,NameServerConfig,NameServerConfigGroup};
 use lazy_static::lazy_static;
-use log::{debug};
 
-use super::config::dns::{DnsServerNode};
+use crate::config::{DnsServerConfig};
 
 static mut RESOLVE_STRATEGY: LookupIpStrategy = LookupIpStrategy::Ipv4thenIpv6;
-static mut RESOLVER_CONFIGS: Vec<ResolverConfig> = vec![];
+static mut NAME_SERVER_CONFIGS:Vec<NameServerConfig> = vec![];
 
 lazy_static! {
-    static ref DNS: TokioAsyncResolver = {
-        let resolver_config = { unsafe { RESOLVER_CONFIGS.pop().unwrap() } };
-        TokioAsyncResolver::tokio(
-            resolver_config,
-            ResolverOpts {
-                ip_strategy: unsafe { RESOLVE_STRATEGY },
-                ..Default::default()
-            },
-        )
-    }
+    static ref DNS: TokioAsyncResolver = TokioAsyncResolver::tokio(
+        ResolverConfig::from_parts(None,vec![],unsafe { NameServerConfigGroup::from(NAME_SERVER_CONFIGS.clone())}),
+        ResolverOpts {
+            ip_strategy: unsafe { RESOLVE_STRATEGY },
+            ..Default::default()
+        }
+    )
     .unwrap();
 }
 
-pub fn init_resolver(
-    strategy: LookupIpStrategy,
-    dns_servers: Vec<DnsServerNode>,
-) {
-    let mut resolver_config = ResolverConfig::new();
-    if dns_servers.is_empty() {
-        resolver_config = ResolverConfig::cloudflare();
-    } else {
-        for dns_server in dns_servers.into_iter() {
-            debug!("load next dns_server");
-            resolver_config.add_name_server(NameServerConfig::from(dns_server));
-        }
+pub fn init_resolver(strategy: LookupIpStrategy,dns_servers: Vec<DnsServerConfig>) {
+
+    unsafe { RESOLVE_STRATEGY = strategy };
+
+    let name_server_configs : Vec<NameServerConfig> = dns_servers.into_iter().map(NameServerConfig::from).collect();
+    for name_server_config in name_server_configs {
+        unsafe { NAME_SERVER_CONFIGS.push(name_server_config)};
     }
-    unsafe {
-        RESOLVE_STRATEGY = strategy;
-        RESOLVER_CONFIGS.push(resolver_config);
-    };
+
     lazy_static::initialize(&DNS);
 }
 

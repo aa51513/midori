@@ -10,9 +10,9 @@ pub mod ep;
 pub mod net;
 pub mod tls;
 pub mod trans;
-
 // re-export
-pub use self::dns::{DnsMode, DnsServerNode};
+pub use dns::DnsMode;
+pub use dns::DnsServerConfig;
 pub use net::NetConfig;
 pub use tls::TLSConfig;
 pub use trans::TransportConfig;
@@ -20,10 +20,24 @@ pub use ep::{EndpointConfig, EpHalfConfig, MaybeHalfConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalConfig {
+
     #[serde(default)]
     pub dns_mode: DnsMode,
+
+    #[serde(default = "default_dns_servers")]
+    pub dns_servers: Vec<DnsServerConfig>,
+
     pub endpoints: Vec<EndpointConfig>,
-    pub dns_servers: Vec<DnsServerNode>,
+}
+
+fn default_dns_servers() -> Vec<DnsServerConfig>{
+    let mut vec: Vec<DnsServerConfig> = Vec::with_capacity(4);
+    vec.push(DnsServerConfig{addr:"8.8.8.8:53".to_string(),..Default::default()});
+    vec.push(DnsServerConfig{addr:"8.8.4.4:53".to_string(),..Default::default()});
+    vec.push(DnsServerConfig{addr:"[2001:4860:4860::8888]:53".to_string(),..Default::default()});
+    vec.push(DnsServerConfig{addr:"[2001:4860:4860::8844]:53".to_string(),..Default::default()});
+
+    vec
 }
 
 impl GlobalConfig {

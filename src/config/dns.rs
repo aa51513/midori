@@ -1,7 +1,8 @@
 use serde::{Serialize, Deserialize};
-use trust_dns_resolver::config::LookupIpStrategy;
-use trust_dns_resolver::config::{NameServerConfig, Protocol};
-use std::net::ToSocketAddrs;
+use trust_dns_resolver::config::{LookupIpStrategy,NameServerConfig};
+use trust_dns_resolver::config::Protocol;
+
+use std::net::SocketAddr;
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -34,42 +35,45 @@ impl From<DnsMode> for LookupIpStrategy {
     }
 }
 
-// default values
-const fn def_true() -> bool { true }
-fn default_protocol() -> String { String::from("udp") }
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct DnsServerConfig {
+    pub addr: String,
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub struct DnsServerNode {
-    addr: String,
-
-    #[serde(default = "default_protocol")]
-    protocol: String,
-
-    #[serde(default = "def_true")]
-    trust_nx_responses: bool,
+    #[serde(default)]
+    pub protocol: DnsProtocol,
 }
 
-impl From<DnsServerNode> for NameServerConfig {
-    fn from(dns_server_node: DnsServerNode) -> Self {
-        let dns_server_socket = dns_server_node
-            .addr
-            .to_socket_addrs()
-            .unwrap()
-            .next()
-            .unwrap();
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum DnsProtocol {
+    Udp,
+    Tcp,
+}
 
-        let str_protocol = dns_server_node.protocol.as_str();
-        let dest_protocol = match str_protocol {
-            "tcp" => Protocol::Tcp,
-            _ => Protocol::Udp,
-        };
-        let dest_trust_nx_responses = dns_server_node.trust_nx_responses;
+impl Default for DnsProtocol {
+    fn default() -> Self { Self::Udp }
+}
+
+impl From<DnsProtocol> for Protocol {
+    fn from(mode: DnsProtocol) -> Self {
+        match mode {
+            DnsProtocol::Udp => Protocol::Udp,
+            DnsProtocol::Tcp => Protocol::Tcp,
+        }
+    }
+}
+
+impl From<DnsServerConfig> for NameServerConfig {
+    fn from(x: DnsServerConfig) -> NameServerConfig {
+        println!("x.addr is {}",x.addr);
+        let socket_addr: SocketAddr = x.addr
+                .parse()
+                .expect("Unable to parse socket address");
         NameServerConfig {
-            socket_addr: dns_server_socket,
-            protocol: dest_protocol,
+            socket_addr: socket_addr,
+            protocol: Protocol::from(x.protocol),
             tls_dns_name: None,
-            trust_nx_responses: dest_trust_nx_responses,
+            trust_nx_responses: true,
         }
     }
 }

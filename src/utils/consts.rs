@@ -1,6 +1,6 @@
 // program version
-pub const VERSION: &str = "0.6.2";
-pub const NAV_VERSION: &str = "0.1.0";
+pub const VERSION: &str = "0.6.4";
+pub const NAV_VERSION: &str = "0.0.1";
 
 // buffer size
 pub const BUF_SIZE: usize = 0x4000;
