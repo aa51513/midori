@@ -12,14 +12,12 @@ static mut RESOLVE_STRATEGY: LookupIpStrategy = LookupIpStrategy::Ipv4thenIpv6;
 static mut NAME_SERVER_CONFIGS:Vec<NameServerConfig> = vec![];
 
 lazy_static! {
-    static ref DNS: TokioAsyncResolver = TokioAsyncResolver::tokio(
-        ResolverConfig::from_parts(None,vec![],unsafe { NameServerConfigGroup::from(NAME_SERVER_CONFIGS.clone())}),
-        ResolverOpts {
+    let config: ResolverConfig = ResolverConfig::from_parts(None,vec![],unsafe { NameServerConfigGroup::from(NAME_SERVER_CONFIGS.clone())});
+    let options: ResolverOpts = ResolverOpts {
             ip_strategy: unsafe { RESOLVE_STRATEGY },
             ..Default::default()
-        }
-    )
-    .unwrap();
+        };
+    static ref DNS: TokioAsyncResolver = TokioAsyncResolver::tokio(config,options).unwrap();
 }
 
 pub fn init_resolver(strategy: LookupIpStrategy,dns_servers: Vec<DnsServerConfig>) {

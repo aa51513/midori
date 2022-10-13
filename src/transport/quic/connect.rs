@@ -5,8 +5,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use log::{debug, trace};
 use async_trait::async_trait;
-use quinn::crypto::rustls::TlsSession;
-use quinn::generic::Connection;
+use quinn::Connection;
 use quinn::{Endpoint, NewConnection};
 
 use super::QuicStream;
@@ -20,7 +19,7 @@ pub struct Connector {
     sni: String,
     max_concurrent: usize,
     count: AtomicUsize,
-    channel: RwLock<Option<Connection<TlsSession>>>,
+    channel: RwLock<Option<Connection>>,
 }
 
 impl Connector {
@@ -67,7 +66,7 @@ impl AsyncConnect for Connector {
     }
 }
 
-async fn new_client(cc: &Connector) -> Result<Connection<TlsSession>> {
+async fn new_client(cc: &Connector) -> Result<Connection> {
     // reuse existed connection
     trace!("quic init new client");
     let channel = (*cc.channel.read().unwrap()).clone();
@@ -95,7 +94,7 @@ async fn new_client(cc: &Connector) -> Result<Connection<TlsSession>> {
     debug!("quic connect[new] -> {}", &cc.addr);
     let connecting = cc
         .cc
-        .connect(&connect_addr, &cc.sni)
+        .connect(connect_addr, &cc.sni)
         .map_err(|e| Error::new(ErrorKind::ConnectionRefused, e))?;
 
     // early data

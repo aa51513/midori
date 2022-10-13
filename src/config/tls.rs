@@ -1,4 +1,5 @@
 use std::fmt::{Display, Formatter};
+use std::time::SystemTime;
 use serde::{Serialize, Deserialize};
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -38,7 +39,7 @@ pub mod enable_tls {
     use std::sync::Arc;
 
     use webpki::DNSNameRef;
-    use rustls::{ClientConfig, ServerConfig, NoClientAuth};
+    use rustls::{ClientConfig, ServerConfig};
     use rustls::internal::msgs::enums::ProtocolVersion;
 
     use crate::utils::{self, must, CommonAddr, NATIVE_CERTS, NOT_A_DNS_NAME};
@@ -78,15 +79,17 @@ pub mod enable_tls {
 
     struct ClientSkipVerify;
 
-    impl rustls::ServerCertVerifier for ClientSkipVerify {
+    impl rustls::client::ServerCertVerifier for ClientSkipVerify {
         fn verify_server_cert(
             &self,
-            _: &rustls::RootCertStore,
-            _: &[rustls::Certificate],
-            _: webpki::DNSNameRef<'_>,
-            _: &[u8],
-        ) -> Result<rustls::ServerCertVerified, rustls::TLSError> {
-            Ok(rustls::ServerCertVerified::assertion())
+            end_entity: &rustls::Certificate,
+            intermediates: &[rustls::Certificate],
+            server_name: &rustls::ServerName,
+            scts: &mut dyn Iterator<Item = &[u8]>,
+            ocsp_response: &[u8],
+            now: SystemTime,
+        ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
+            Ok(rustls::client::ServerCertVerified::assertion())
         }
     }
 
@@ -208,15 +211,18 @@ pub mod enable_tls {
     }
 
     fn make_server_config(config: &TLSServerConfig) -> ServerConfig {
-        let mut tlsc = ServerConfig::new(NoClientAuth::new());
+        let mut server_config = rustls::ServerConfig::builder()
+            .with_safe_defaults().with_no_client_auth()
+            .expect("init server config failed");
+
         // if not specified, use the constructor's default value
         if !config.alpns.is_empty() {
-            tlsc.alpn_protocols =
+            server_config.alpn_protocols =
                 config.alpns.iter().map(|x| x.as_bytes().to_vec()).collect();
         };
         // the same as alpns
         if !config.versions.is_empty() {
-            tlsc.versions = config
+            server_config.versions = config
                 .versions
                 .iter()
                 .map(|x| match x.as_str() {
@@ -245,12 +251,12 @@ pub mod enable_tls {
             ));
             must!(r.read_to_end(&mut ocsp), "load {}", &config.ocsp);
         }
-        must!(tlsc.set_single_cert_with_ocsp_and_sct(
+        must!(server_config.set_single_cert_with_ocsp_and_sct(
             certs,
             key,
             ocsp,
             Vec::new()
         ));
-        tlsc
+        server_config
     }
 }

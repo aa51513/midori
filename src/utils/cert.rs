@@ -3,7 +3,7 @@ use std::io::BufReader;
 
 use lazy_static::lazy_static;
 use rustls::{Certificate, PrivateKey, RootCertStore};
-use rustls::internal::pemfile;
+use rustls_pemfile::Item;
 
 use crate::error::cert::{CertError, Result};
 
@@ -26,24 +26,41 @@ pub fn generate_cert_key(
 }
 
 pub fn load_certs(path: &str) -> Result<Vec<Certificate>> {
-    pemfile::certs(&mut BufReader::new(File::open(path)?))
-        .map_err(|_| CertError::LoadCertificate)
+    let items: Vec<Item>  = rustls_pemfile::read_all(&mut BufReader::new(File::open(path)?)).map_err(|_| CertError::LoadCertificate).expect("TODO: panic message");
+    if !items.is_empty() {
+        let mut certificates = Vec::<Certificate>::new();
+        for item in items {
+            match item.unwrap() {
+                Item::X509Certificate(cert) => certificates.push(Certificate{
+                    0:cert,
+                }),
+                _ => println!("unhandled Certificate item"),
+            }
+        }
+        Ok(certificates)
+    }
+    Err(CertError::LoadCertificate)
 }
 
 pub fn load_keys(path: &str) -> Result<Vec<PrivateKey>> {
-    if let Ok(key) =
-        pemfile::pkcs8_private_keys(&mut BufReader::new(File::open(path)?))
-    {
-        if !key.is_empty() {
-            return Ok(key);
+    let items: Vec<Item>  = rustls_pemfile::read_all(&mut BufReader::new(File::open(path)?)).map_err(|_| CertError::LoadCertificate).expect("TODO: panic message");
+    if !items.is_empty() {
+        let mut certificates = Vec::<PrivateKey>::new();
+        for item in items {
+            match item.unwrap() {
+                Item::RSAKey(key) => certificates.push(PrivateKey{
+                    0:key,
+                }),
+                Item::PKCS8Key(key) => certificates.push(PrivateKey{
+                    0:key,
+                }),
+                Item::ECKey(key) => certificates.push(PrivateKey{
+                    0:key,
+                }),
+                _ => println!("unhandled PrivateKey item"),
+            }
         }
-    }
-    if let Ok(key) =
-        pemfile::rsa_private_keys(&mut BufReader::new(File::open(path)?))
-    {
-        if !key.is_empty() {
-            return Ok(key);
-        }
+        Ok(certificates)
     }
     Err(CertError::LoadPrivateKey)
 }

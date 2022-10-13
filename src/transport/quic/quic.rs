@@ -9,8 +9,7 @@ use futures::StreamExt;
 use log::{warn, info, debug, trace};
 use async_trait::async_trait;
 use tokio::io::{AsyncRead, AsyncWrite};
-use quinn::crypto::rustls::TlsSession;
-use quinn::generic::{SendStream, RecvStream, Connection};
+use quinn::{SendStream, RecvStream, Connection};
 use quinn::{Endpoint, NewConnection, Incoming, IncomingBiStreams};
 
 use super::{AsyncConnect, AsyncAccept, IOStream, Transport};
@@ -18,15 +17,15 @@ use crate::dns;
 use crate::utils::{self, CommonAddr};
 
 pub struct QuicStream {
-    send: SendStream<TlsSession>,
-    recv: RecvStream<TlsSession>,
+    send: SendStream,
+    recv: RecvStream,
 }
 
 impl QuicStream {
     #[inline]
     pub fn new(
-        send: SendStream<TlsSession>,
-        recv: RecvStream<TlsSession>,
+        send: SendStream,
+        recv: RecvStream,
     ) -> Self {
         QuicStream { send, recv }
     }

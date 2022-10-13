@@ -89,6 +89,7 @@ use quic_ext::*;
 pub mod quic_ext {
     use super::*;
     use std::sync::Arc;
+    use libc::sockaddr;
     use quinn::{Endpoint, ClientConfig, ServerConfig};
     use crate::utils;
     use crate::transport::quic;
@@ -115,15 +116,16 @@ pub mod quic_ext {
         let mut client_tls = tlsc.to_tls();
         let sni = tlsc.set_sni(&mut client_tls, &sockaddr);
 
-        let mut client_config = ClientConfig::default();
+        let mut client_config = ClientConfig::with_native_roots();
         // default:
         // set ciphersuits = QUIC_CIPHER_SUITES
         // set versions = TLSv1_3
         // set enable_early_data = true
-        client_tls.ciphersuites = client_config.crypto.ciphersuites.clone();
-        client_tls.versions = client_config.crypto.versions.clone();
-        client_tls.enable_early_data = client_config.crypto.enable_early_data;
-        client_config.crypto = Arc::new(client_tls);
+        // client_tls.ciphersuites = client_config.crypto.ciphersuites.clone();
+        // client_tls.versions = client_config.crypto.versions.clone();
+        // client_tls.enable_early_data = client_config.crypto.enable_early_data;
+
+        //client_config.crypto = Arc::new(client_tls);
 
         let bind_addr = if is_ipv6 {
             utils::empty_sockaddr_v6()
@@ -131,9 +133,12 @@ pub mod quic_ext {
             utils::empty_sockaddr_v4()
         };
 
-        let mut builder = Endpoint::builder();
-        builder.default_client_config(client_config);
-        let (ep, _) = must!(builder.bind(&bind_addr), "bind {}", &bind_addr);
+        //let mut builder = Endpoint::builder();
+        //builder.default_client_config(client_config);
+        //let (ep, _) = must!(builder.bind(&bind_addr), "bind {}", &bind_addr);
+
+        let mut ep: Endpoint = Endpoint::client(bind_addr).expect("address error");
+        ep.set_default_client_config(client_config);
         quic::Connector::new(ep, sockaddr, sni, trans.mux)
     }
 
@@ -160,21 +165,13 @@ pub mod quic_ext {
             _ => unreachable!(),
         };
 
-        let mut server_tls = tlsc.to_tls();
-        let mut server_config = ServerConfig::default();
-        // default:
-        // set ciphersuits = QUIC_CIPHER_SUITES
-        // set versions = TLSv1_3
-        // set max_early_data_size = u32::max_value()
-        server_tls.ciphersuites = server_config.crypto.ciphersuites.clone();
-        server_tls.versions = server_config.crypto.versions.clone();
-        server_tls.max_early_data_size =
-            server_config.crypto.max_early_data_size;
-        server_config.crypto = Arc::new(server_tls);
-
-        let mut builder = Endpoint::builder();
-        builder.listen(server_config);
-        let (_, incoming) = builder.bind(bind_addr).expect("failed to bind");
+        let certs =
+            must!(utils::load_certs(&tlsc.cert), "load {}", &tlsc.cert);
+        let mut keys =
+            must!(utils::load_keys(&tlsc.key), "load {}", &tlsc.key);
+        let key = keys.remove(0);
+        let server_config = ServerConfig::with_single_cert(certs,key).expect("bad cert file");
+        let (_, incoming) = Endpoint::server(server_config, *bind_addr).expect("failed to bind");
         info!("bind {}[quic]", &bind_addr);
         quic::RawAcceptor::new(incoming, sockaddr)
     }

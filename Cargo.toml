@@ -46,21 +46,22 @@ env_logger = "0.9"
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "io-util", "net"] }
 
 # dns
-trust-dns-resolver = "0.20"
+trust-dns-resolver = "0.22.0"
 
 # tls
-rcgen = { version = "0.8", optional = true }
-webpki = { version = "0.21", optional = true }
-webpki-roots = { version = "0.21", optional = true }
-rustls-native-certs = { version = "0.5", features = ["rustls"], optional = true }
-tokio-rustls = { version = "0.22", optional = true }
-rustls = { version = "0.19", features = ["dangerous_configuration", "quic"], optional = true }
+rcgen = { version = "0.10", optional = true }
+webpki = { version = "0.22", optional = true }
+webpki-roots = { version = "0.22", optional = true }
+rustls-native-certs = { version = "0.6", optional = true }
+tokio-rustls = { version = "0.23", optional = true }
+rustls = { version = "0.20", features = ["dangerous_configuration", "quic"], optional = true }
+rustls-pemfile = "1"
 
 # ws
-tokio-tungstenite = { version = "0.16", optional = true }
+tokio-tungstenite = { version = "0.17", optional = true }
 
 # h2
 h2 = { version = "0.3", optional = true }
 
 # quic
-quinn = { version = "0.7", default-features = false, features = ["tls-rustls"], optional = true }
+quinn = { version = "0.8", default-features = true, features = ["rustls","native-certs","ring"], optional = true }

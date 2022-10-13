@@ -3,21 +3,20 @@ use std::task::{Poll, Context};
 use std::io::Result;
 
 use tokio::io::{AsyncRead, AsyncWrite};
-use quinn::crypto::rustls::TlsSession;
-use quinn::generic::{SendStream, RecvStream};
+use quinn::{SendStream, RecvStream};
 
 use crate::transport::IOStream;
 
 pub struct QuicStream {
-    send: SendStream<TlsSession>,
-    recv: RecvStream<TlsSession>,
+    send: SendStream,
+    recv: RecvStream,
 }
 
 impl QuicStream {
     #[inline]
     pub fn new(
-        send: SendStream<TlsSession>,
-        recv: RecvStream<TlsSession>,
+        send: SendStream,
+        recv: RecvStream,
     ) -> Self {
         QuicStream { send, recv }
     }

@@ -16,7 +16,7 @@ where
         if n == 0 {
             break;
         };
-        let _ = w.write(&buf[..n]).await?;
+        w.write(&buf[..n]).await?;
     }
     w.shutdown().await?;
     Ok(())
