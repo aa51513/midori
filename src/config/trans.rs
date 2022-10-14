@@ -42,6 +42,7 @@ impl Display for TransportConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebSocketConfig {
     pub path: String,
+    pub host: String,
 }
 
 #[cfg(feature = "h2c")]
@@ -79,7 +80,7 @@ where
     }
 
     fn apply_to_conn(&self, conn: C) -> Self::Connector {
-        ws::Connector::new(conn, self.path.clone())
+        ws::Connector::new(conn, self.path.clone(),self.host.clone())
     }
 
     fn apply_to_lis_with_conn(&self, _: Arc<C>, _: L) -> Self::Acceptor {

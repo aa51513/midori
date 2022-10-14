@@ -1,10 +1,12 @@
+use std::borrow::Borrow;
 use std::io::{Error, ErrorKind, Result};
 
 use log::debug;
-use http::Uri;
+use http::{Uri};
 use async_trait::async_trait;
 
 use tokio_tungstenite::tungstenite;
+use httparse::Request;
 use tungstenite::protocol::WebSocketConfig;
 
 use super::WebSocketStream;
@@ -14,21 +16,24 @@ use crate::utils::CommonAddr;
 
 pub struct Connector<T: AsyncConnect> {
     cc: T,
-    uri: Uri,
+    request: Request,
     config: Option<WebSocketConfig>,
 }
 
 impl<T: AsyncConnect> Connector<T> {
-    pub fn new(cc: T, path: String) -> Self {
+    pub fn new(cc: T, path: String,host: String) -> Self {
         let authority = cc.addr().to_string();
+
+        let uri = Uri::builder()
+            .scheme(Self::SCHEME)
+            .authority(authority.as_str())
+            .path_and_query(path)
+            .build()
+            .unwrap();
+        let request= Request::builder().uri(uri).header("host",host).body(()).unwrap();
         Connector {
             cc,
-            uri: Uri::builder()
-                .scheme(Self::SCHEME)
-                .authority(authority.as_str())
-                .path_and_query(path)
-                .build()
-                .unwrap(),
+            request,
             config: None,
         }
     }
@@ -54,7 +59,7 @@ impl<T: AsyncConnect> AsyncConnect for Connector<T> {
         let stream = self.cc.connect().await?;
         debug!("ws connect ->");
         tokio_tungstenite::client_async_with_config(
-            &self.uri,
+            self.request.borrow(),
             stream,
             self.config,
         )

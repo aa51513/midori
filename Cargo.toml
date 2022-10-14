@@ -59,6 +59,7 @@ rustls-pemfile = "1"
 
 # ws
 tokio-tungstenite = { version = "0.17", optional = true }
+httparse = "1.8"
 
 # h2
 h2 = { version = "0.3", optional = true }
