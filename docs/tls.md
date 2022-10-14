@@ -11,7 +11,7 @@ endpoint->listen|remote->tls
 default: "tlsv1.3, tlsv1.2"
 
 ### alpns: string
-default: "h2, http/1.1"
+default: ["h2", "http/1.1"]
 
 ### sni(client): string
 default: $addr
@@ -69,8 +69,8 @@ openssl ocsp -issuer <ca> -cert <cert> -url http://r3.o.lencr.org -header Host=r
         "proto": "plain"  // could be omitted
     },
     "tls": {
-        "versions": "tlsv1.3, tlsv1.2",
-        "alpns": "h2, http/1.1",
+        ["versions": "tlsv1.3","tlsv1.2"],
+        "alpns": ["h2", "http/1.1"],
         "key": "localhost",
         "cert": "localhost"  // generate certificate
     }
