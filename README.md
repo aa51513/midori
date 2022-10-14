@@ -125,52 +125,59 @@ RUST_LOG=debug midori
 <summary>show example</summary>
 <pre><code>
 {
-  "dns_mode": "ipv4_then_ipv6",
-  "endpoints": [
-    {
-      "listen": {
-        "addr": "0.0.0.0:5000",
-        "net": "tcp",
-        "trans": {
-          "proto": "ws",
-          "path": "/"
-        },
-        "tls": {
-          "cert": "x.crt",
-          "key": "x.pem",
-          "versions": "tlsv1.3, tlsv1.2",
-          "aplns": "http/1.1",
-          "ocsp": "x.ocsp"
+    "dns_mode": "ipv4_then_ipv6",
+    "dns_servers": [{
+            "addr": "8.8.8.8:53",
+            "protocol": "tcp"
+        }, {
+            "addr": "114.114.114.114:53",
+            "protocol": "udp"
         }
-      },
-      "remote": {
-        "addr": "www.example.com:443",
-        "net": "tcp",
-        "trans": {
-          "proto": "h2",
-          "path": "/",
-          "server_push": false
-        },
-        "tls": {
-          "roots": "firefox",
-          "versions": "tlsv1.3, tlsv1.2",
-          "sni": "www.example.com",
-          "aplns": "h2",
-          "skip_verify": false,
-          "enable_sni": true
+    ],
+    "endpoints": [{
+            "listen": {
+                "addr": "0.0.0.0:5000",
+                "net": "tcp",
+                "trans": {
+                    "proto": "ws",
+                    "path": "/"
+                },
+                "tls": {
+                    "cert": "client.pem",
+                    "key": "client.key",
+                    "versions": ["tlsv1.3", "tlsv1.2"],
+                    "aplns": "http/1.1"
+                }
+            },
+            "remote": {
+                "addr": "www.baidu.com:443",
+                "net": "tcp",
+                "trans": {
+                    "proto": "h2",
+                    "path": "/",
+                    "server_push": false
+                },
+                "tls": {
+                    "roots": "firefox",
+                    "versions": ["tlsv1.3", "tlsv1.2"],
+                    "sni": "www.baidu.com",
+                    "aplns": "h2",
+                    "skip_verify": false,
+                    "enable_sni": true
+                }
+            }
         }
-      }
-    }
-  ]
+    ]
 }
 </code></pre>
 </details>
 
 ### Global
-Currently, the configuration file only consists of 2 fields:
+Currently, the configuration file only consists of 3 fields:
 ```shell
 {
     "dns_mode": "", // and other global params
+    "dns_servers": [], // dns server info
     "endpoints": []
 }
 ```
@@ -182,6 +189,23 @@ The `trust-dns` crate supports these strategies:
 - ipv4_then_ipv6 (*default*)
 - ipv6_then_ipv4
 - ipv4_and_ipv6
+
+### Dns Server(s)
+Each dns server contains an associated pair of `addr` and `protocol`:
+```bash
+{
+    "addr": "",
+    "protocol": ""
+}
+```
+Options of `addr` & `protocol`:
+
+```bash
+{
+    "addr": "",  // must with port such as 127.0.0.1:5353
+    "protocol": ""  // udp(default),tcp
+}
+```
 
 ### Endpoint(s)
 Each endpoint contains an associated pair of `listen` and `remote`:
