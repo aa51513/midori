@@ -1,5 +1,5 @@
-# Roma（All roads lead to Rome）
-[Not a misspelling, roma means Rome in Italian]
+# Roma（All roads lead to Rome  --Roma means Rome in Italian）
+
 [![CI][ci-badge]][ci-url]
 [![Codacy][codacy-badge]][codacy-url]
 [![License][mit-badge]][mit-url]
