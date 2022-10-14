@@ -1,10 +1,11 @@
+use std::convert::{TryFrom};
 use std::io::Result;
 use std::net::SocketAddr;
 use std::sync::Arc;
 
 use log::debug;
 use async_trait::async_trait;
-use webpki::DNSName;
+use webpki::{DnsName};
 use rustls::{ClientConfig, ServerConfig};
 use tokio_rustls::{TlsAcceptor, TlsConnector};
 // re-export
@@ -16,13 +17,13 @@ use crate::utils::{self, CommonAddr};
 
 pub struct Connector<T: AsyncConnect> {
     cc: T,
-    sni: DNSName,
+    sni: DnsName,
     // includes inner tls config
     tls: TlsConnector,
 }
 
 impl<T: AsyncConnect> Connector<T> {
-    pub fn new(cc: T, sni: DNSName, tlsc: ClientConfig) -> Self {
+    pub fn new(cc: T, sni: DnsName, tlsc: ClientConfig) -> Self {
         Self {
             cc,
             sni,
@@ -47,7 +48,10 @@ impl<T: AsyncConnect> AsyncConnect for Connector<T> {
     async fn connect(&self) -> Result<Self::IO> {
         let stream = self.cc.connect().await?;
         debug!("tls connect ->");
-        self.tls.connect(self.sni.as_ref(), stream).await
+        let dns_name_ref = self.sni.as_ref();
+        let server_name_str  = std::str::from_utf8(dns_name_ref.as_ref()).unwrap();
+        let server_name = rustls::ServerName::try_from(server_name_str).expect("invalid DNS name");
+        self.tls.connect(server_name, stream).await
     }
 }
 

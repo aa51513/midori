@@ -88,8 +88,6 @@ use quic_ext::*;
 #[cfg(feature = "quic")]
 pub mod quic_ext {
     use super::*;
-    use std::sync::Arc;
-    use libc::sockaddr;
     use quinn::{Endpoint, ClientConfig, ServerConfig};
     use crate::utils;
     use crate::transport::quic;
@@ -116,7 +114,7 @@ pub mod quic_ext {
         let mut client_tls = tlsc.to_tls();
         let sni = tlsc.set_sni(&mut client_tls, &sockaddr);
 
-        let mut client_config = ClientConfig::with_native_roots();
+        let client_config = ClientConfig::with_native_roots();
         // default:
         // set ciphersuits = QUIC_CIPHER_SUITES
         // set versions = TLSv1_3

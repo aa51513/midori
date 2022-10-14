@@ -1,5 +1,5 @@
 use serde::{Serialize, Deserialize};
-use trust_dns_resolver::config::{LookupIpStrategy,NameServerConfig};
+use trust_dns_resolver::config::{LookupIpStrategy, NameServerConfig, ResolverOpts};
 use trust_dns_resolver::config::Protocol;
 
 use std::net::SocketAddr;
@@ -23,15 +23,18 @@ impl Default for DnsMode {
     fn default() -> Self { Self::Ipv4ThenIpv6 }
 }
 
-impl From<DnsMode> for LookupIpStrategy {
+impl From<DnsMode> for ResolverOpts {
     fn from(mode: DnsMode) -> Self {
-        match mode {
+        let strategy = match mode {
             DnsMode::Ipv4Only => LookupIpStrategy::Ipv4Only,
             DnsMode::Ipv6Only => LookupIpStrategy::Ipv6Only,
             DnsMode::Ipv4AndIpv6 => LookupIpStrategy::Ipv4AndIpv6,
             DnsMode::Ipv4ThenIpv6 => LookupIpStrategy::Ipv4thenIpv6,
             DnsMode::Ipv6ThenIpv4 => LookupIpStrategy::Ipv6thenIpv4,
-        }
+        };
+        let mut config = ResolverOpts::default();
+        config.ip_strategy = strategy;
+        config
     }
 }
 
@@ -70,10 +73,11 @@ impl From<DnsServerConfig> for NameServerConfig {
                 .parse()
                 .expect("Unable to parse socket address");
         NameServerConfig {
-            socket_addr: socket_addr,
+            socket_addr,
             protocol: Protocol::from(x.protocol),
             tls_dns_name: None,
             trust_nx_responses: true,
+            bind_addr: None
         }
     }
 }

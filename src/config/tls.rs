@@ -38,11 +38,11 @@ pub mod enable_tls {
     use std::io::{BufReader, Read};
     use std::sync::Arc;
 
-    use webpki::DNSNameRef;
+    use webpki::DnsNameRef;
     use rustls::{ClientConfig, ServerConfig};
     use rustls::internal::msgs::enums::ProtocolVersion;
 
-    use crate::utils::{self, must, CommonAddr, NATIVE_CERTS, NOT_A_DNS_NAME};
+    use crate::utils::{self, must, CommonAddr, NOT_A_DNS_NAME};
     use crate::transport::tls;
     use crate::transport::{AsyncConnect, AsyncAccept};
 
@@ -82,12 +82,12 @@ pub mod enable_tls {
     impl rustls::client::ServerCertVerifier for ClientSkipVerify {
         fn verify_server_cert(
             &self,
-            end_entity: &rustls::Certificate,
-            intermediates: &[rustls::Certificate],
-            server_name: &rustls::ServerName,
-            scts: &mut dyn Iterator<Item = &[u8]>,
-            ocsp_response: &[u8],
-            now: SystemTime,
+            _: &rustls::Certificate,
+            _: &[rustls::Certificate],
+            _: &rustls::ServerName,
+            _: &mut dyn Iterator<Item = &[u8]>,
+            _: &[u8],
+            _: SystemTime,
         ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
             Ok(rustls::client::ServerCertVerified::assertion())
         }
@@ -118,57 +118,82 @@ pub mod enable_tls {
         ) -> impl AsyncConnect {
             let mut tlsc = make_client_config(self);
             let sni = self.set_sni(&mut tlsc, conn.addr());
-            let sni = DNSNameRef::try_from_ascii_str(&sni).unwrap().to_owned();
+            let sni = DnsNameRef::try_from_ascii_str(&sni).unwrap().to_owned();
             tls::Connector::new(conn, sni, tlsc)
         }
     }
 
     fn make_client_config(config: &TLSClientConfig) -> ClientConfig {
-        let mut tlsc = ClientConfig::new();
-        tlsc.enable_sni = config.enable_sni;
-        tlsc.enable_early_data = config.enable_early_data;
+        let client_config_builder = rustls::ClientConfig::builder()
+            .with_safe_defaults();
+
+        let mut root_store = rustls::RootCertStore::empty();
+        // configure the validator
+        match config.roots.as_str() {
+            "native" => root_store.add_server_trust_anchors(
+                webpki_roots::TLS_SERVER_ROOTS
+                    .0
+                    .iter()
+                    .map(|ta| {
+                        rustls::OwnedTrustAnchor::from_subject_spki_name_constraints(
+                            ta.subject,
+                            ta.spki,
+                            ta.name_constraints,
+                        )
+                    }),
+            ),
+
+            "firefox" => root_store.add_server_trust_anchors(
+                webpki_roots::TLS_SERVER_ROOTS
+                    .0
+                    .iter()
+                    .map(|ta| {
+                        rustls::OwnedTrustAnchor::from_subject_spki_name_constraints(
+                            ta.subject,
+                            ta.spki,
+                            ta.name_constraints,
+                        )
+                    })
+            ),
+
+            file_path => {
+                let self_certs = rustls_pemfile::certs(&mut BufReader::new(must!(
+                        fs::File::open(file_path),
+                        "open {}",
+                        file_path
+                    ))).expect("read self_certs failed");
+                 root_store.add_parsable_certificates(&*self_certs);
+            }
+        };
+        // cert set end
+        let client_config_builder = client_config_builder.with_root_certificates(root_store);
+
+        let mut client_config =   client_config_builder.with_no_client_auth();
+        client_config.enable_sni = config.enable_sni;
+        client_config.enable_early_data = config.enable_early_data;
         // if not specified, use the constructor's default value
         if !config.alpns.is_empty() {
-            tlsc.alpn_protocols =
+            client_config.alpn_protocols =
                 config.alpns.iter().map(|x| x.as_bytes().to_vec()).collect();
         };
         // the same as alpns
         if !config.versions.is_empty() {
-            tlsc.versions = config
-                .versions
-                .iter()
+            let _ = config.versions.iter()
                 .map(|x| match x.as_str() {
-                    "tlsv1.2" => ProtocolVersion::TLSv1_2,
-                    "tlsv1.3" => ProtocolVersion::TLSv1_3,
+                    "tlsv1.2" => client_config.supports_version(ProtocolVersion::TLSv1_2),
+                    "tlsv1.3" => client_config.supports_version(ProtocolVersion::TLSv1_3),
                     _ => panic!("unknown ssl version"),
-                })
-                .collect();
+                });
         };
         // skip verify
         if config.skip_verify {
-            tlsc.dangerous()
+            client_config.dangerous()
                 .set_certificate_verifier(Arc::new(ClientSkipVerify));
-            return tlsc;
+            return client_config;
         };
-        // configure the validator
-        match config.roots.as_str() {
-            "native" => tlsc.root_store = NATIVE_CERTS.clone(),
 
-            "firefox" => tlsc
-                .root_store
-                .add_server_trust_anchors(&webpki_roots::TLS_SERVER_ROOTS),
 
-            file_path => {
-                tlsc.root_store
-                    .add_pem_file(&mut BufReader::new(must!(
-                        fs::File::open(file_path),
-                        "open {}",
-                        file_path
-                    )))
-                    .unwrap();
-            }
-        };
-        tlsc
+        client_config
     }
 
     // TLS Server
@@ -191,7 +216,7 @@ pub mod enable_tls {
     use crate::utils::MaybeQuic;
 
     impl TLSServerConfig {
-        pub fn to_tls(&self) -> ServerConfig { make_server_config(self) }
+        // pub fn to_tls(&self) -> ServerConfig { make_server_config(self) }
 
         pub fn apply_to_lis<L: AsyncAccept>(&self, lis: L) -> impl AsyncAccept {
             let config = make_server_config(self);
@@ -211,27 +236,9 @@ pub mod enable_tls {
     }
 
     fn make_server_config(config: &TLSServerConfig) -> ServerConfig {
-        let mut server_config = rustls::ServerConfig::builder()
-            .with_safe_defaults().with_no_client_auth()
-            .expect("init server config failed");
+        let server_config_builder = rustls::ServerConfig::builder()
+            .with_safe_defaults().with_no_client_auth();
 
-        // if not specified, use the constructor's default value
-        if !config.alpns.is_empty() {
-            server_config.alpn_protocols =
-                config.alpns.iter().map(|x| x.as_bytes().to_vec()).collect();
-        };
-        // the same as alpns
-        if !config.versions.is_empty() {
-            server_config.versions = config
-                .versions
-                .iter()
-                .map(|x| match x.as_str() {
-                    "tlsv1.2" => ProtocolVersion::TLSv1_2,
-                    "tlsv1.3" => ProtocolVersion::TLSv1_3,
-                    _ => panic!("unknown ssl version"),
-                })
-                .collect();
-        };
         let (certs, key) = if config.cert == config.key {
             must!(utils::generate_cert_key(&config.cert))
         } else {
@@ -241,6 +248,8 @@ pub mod enable_tls {
                 must!(utils::load_keys(&config.key), "load {}", &config.key);
             (certs, keys.remove(0))
         };
+        let mut server_config;
+
         let mut ocsp = vec![0u8];
         if !config.ocsp.is_empty() {
             ocsp.reserve(utils::OCSP_BUF_SIZE);
@@ -250,13 +259,26 @@ pub mod enable_tls {
                 &config.ocsp
             ));
             must!(r.read_to_end(&mut ocsp), "load {}", &config.ocsp);
+            server_config = server_config_builder.with_single_cert_with_ocsp_and_sct(certs, key, ocsp, Vec::new()).expect("bad server certs");
+        }else{
+            server_config = server_config_builder.with_single_cert(certs,key).expect("bad server certs");
         }
-        must!(server_config.set_single_cert_with_ocsp_and_sct(
-            certs,
-            key,
-            ocsp,
-            Vec::new()
-        ));
+
+        // if not specified, use the constructor's default value
+        if !config.alpns.is_empty() {
+            server_config.alpn_protocols =
+                config.alpns.iter().map(|x| x.as_bytes().to_vec()).collect();
+        };
+        // the same as alpns
+        if !config.versions.is_empty() {
+            let _ = config.versions.iter()
+                .map(|x| match x.as_str() {
+                    "tlsv1.2" => server_config.supports_version(ProtocolVersion::TLSv1_2),
+                    "tlsv1.3" => server_config.supports_version(ProtocolVersion::TLSv1_3),
+                    _ => panic!("unknown ssl version"),
+                });
+        };
+
         server_config
     }
 }

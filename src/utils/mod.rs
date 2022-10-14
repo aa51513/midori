@@ -13,7 +13,7 @@ pub use types::{CommonAddr, MaybeQuic};
 #[cfg(feature = "tls")]
 pub mod cert;
 #[cfg(feature = "tls")]
-pub use cert::{load_certs, load_keys, generate_cert_key, NATIVE_CERTS};
+pub use cert::{load_certs, load_keys, generate_cert_key};
 
 #[allow(clippy::mut_from_ref)]
 #[inline]

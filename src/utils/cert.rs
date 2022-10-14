@@ -1,16 +1,10 @@
 use std::fs::File;
 use std::io::BufReader;
 
-use lazy_static::lazy_static;
-use rustls::{Certificate, PrivateKey, RootCertStore};
+use rustls::{Certificate, PrivateKey};
 use rustls_pemfile::Item;
 
 use crate::error::cert::{CertError, Result};
-
-lazy_static! {
-    pub static ref NATIVE_CERTS: RootCertStore =
-        rustls_native_certs::load_native_certs().unwrap();
-}
 
 pub fn generate_cert_key(
     common_name: &str,
@@ -30,14 +24,14 @@ pub fn load_certs(path: &str) -> Result<Vec<Certificate>> {
     if !items.is_empty() {
         let mut certificates = Vec::<Certificate>::new();
         for item in items {
-            match item.unwrap() {
+            match item {
                 Item::X509Certificate(cert) => certificates.push(Certificate{
                     0:cert,
                 }),
                 _ => println!("unhandled Certificate item"),
             }
         }
-        Ok(certificates)
+        return Ok(certificates);
     }
     Err(CertError::LoadCertificate)
 }
@@ -47,7 +41,7 @@ pub fn load_keys(path: &str) -> Result<Vec<PrivateKey>> {
     if !items.is_empty() {
         let mut certificates = Vec::<PrivateKey>::new();
         for item in items {
-            match item.unwrap() {
+            match item {
                 Item::RSAKey(key) => certificates.push(PrivateKey{
                     0:key,
                 }),
@@ -60,7 +54,7 @@ pub fn load_keys(path: &str) -> Result<Vec<PrivateKey>> {
                 _ => println!("unhandled PrivateKey item"),
             }
         }
-        Ok(certificates)
+        return Ok(certificates);
     }
     Err(CertError::LoadPrivateKey)
 }
