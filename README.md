@@ -1,4 +1,4 @@
-# Midori
+# Roma（All roads lead to Rome  --Roma means Rome in Italian）
 
 [![CI][ci-badge]][ci-url]
 [![Codacy][codacy-badge]][codacy-url]
@@ -46,7 +46,7 @@
 ## Build
 ```shell
 git clone https://github.com/aa51513/roma
-cd midori
+cd roma
 cargo build --release
 ```
 ### Optional Features
@@ -69,7 +69,7 @@ cargo build --release --no-default-features --features tls,ws,h2c
 ```
 ## Usage
 ```shell
-midori [OPTIONS] [SUBCOMMAND]
+roma [OPTIONS] [SUBCOMMAND]
 
 FLAGS:
     -h, --help       Prints help information
@@ -99,7 +99,7 @@ Let's start with a simple TCP relay(supports zero-copy on linux). Just create a 
 
 Launch these 2 endpoints:
 ```shell
-midori -c config.json
+roma -c config.json
 ```
 
 Almost all kinds of address are supported, including `ipv4`, `ipv6`, `domain name` and `unix socket path`.
@@ -117,7 +117,7 @@ Supported log levels:
 
 Example:
 ```shell
-RUST_LOG=debug midori
+RUST_LOG=debug roma
 ```
 
 ## Full Configuration
@@ -125,52 +125,59 @@ RUST_LOG=debug midori
 <summary>show example</summary>
 <pre><code>
 {
-  "dns_mode": "ipv4_then_ipv6",
-  "endpoints": [
-    {
-      "listen": {
-        "addr": "0.0.0.0:5000",
-        "net": "tcp",
-        "trans": {
-          "proto": "ws",
-          "path": "/"
-        },
-        "tls": {
-          "cert": "x.crt",
-          "key": "x.pem",
-          "versions": "tlsv1.3, tlsv1.2",
-          "aplns": "http/1.1",
-          "ocsp": "x.ocsp"
+    "dns_mode": "ipv4_then_ipv6",
+    "dns_servers": [{
+            "addr": "8.8.8.8:53",
+            "protocol": "tcp"
+        }, {
+            "addr": "114.114.114.114:53",
+            "protocol": "udp"
         }
-      },
-      "remote": {
-        "addr": "www.example.com:443",
-        "net": "tcp",
-        "trans": {
-          "proto": "h2",
-          "path": "/",
-          "server_push": false
-        },
-        "tls": {
-          "roots": "firefox",
-          "versions": "tlsv1.3, tlsv1.2",
-          "sni": "www.example.com",
-          "aplns": "h2",
-          "skip_verify": false,
-          "enable_sni": true
+    ],
+    "endpoints": [{
+            "listen": {
+                "addr": "0.0.0.0:5000",
+                "net": "tcp",
+                "trans": {
+                    "proto": "ws",
+                    "path": "/"
+                },
+                "tls": {
+                    "cert": "client.pem",
+                    "key": "client.key",
+                    "versions": ["tlsv1.3", "tlsv1.2"],
+                    "aplns": "http/1.1"
+                }
+            },
+            "remote": {
+                "addr": "www.baidu.com:443",
+                "net": "tcp",
+                "trans": {
+                    "proto": "h2",
+                    "path": "/",
+                    "server_push": false
+                },
+                "tls": {
+                    "roots": "firefox",
+                    "versions": ["tlsv1.3", "tlsv1.2"],
+                    "sni": "www.baidu.com",
+                    "aplns": "h2",
+                    "skip_verify": false,
+                    "enable_sni": true
+                }
+            }
         }
-      }
-    }
-  ]
+    ]
 }
 </code></pre>
 </details>
 
 ### Global
-Currently, the configuration file only consists of 2 fields:
+Currently, the configuration file only consists of 3 fields:
 ```shell
 {
     "dns_mode": "", // and other global params
+    "dns_servers": [], // dns server info
     "endpoints": []
 }
 ```
@@ -182,6 +189,31 @@ The `trust-dns` crate supports these strategies:
 - ipv4_then_ipv6 (*default*)
 - ipv6_then_ipv4
 - ipv4_and_ipv6
+
+### Dns Server(s) optional!!
+Each dns server contains an associated pair of `addr` and `protocol`:
+```bash
+{
+    "addr": "",
+    "protocol": ""
+}
+```
+Options of `addr` & `protocol`:
+
+```bash
+{
+    "addr": "",  // must be with port such as 127.0.0.1:5353
+    "protocol": ""  // udp(default),tcp
+}
+```
+default Dns Servers is 
+```bash
+8.8.8.8:53,
+8.8.4.4:53,
+[2001:4860:4860::8888]:53,
+[2001:4860:4860::8844]:53
+with udp protocol
+```
 
 ### Endpoint(s)
 Each endpoint contains an associated pair of `listen` and `remote`:
