@@ -23,6 +23,7 @@ Also See: [TLS][tls-doc-url]
     "net": "tcp",
     "trans": {
         "proto": "ws",
+		"host": "host.of.request",
         "path": "/test"
     }
 }
