@@ -20,7 +20,6 @@ pub use ep::{EndpointConfig, EpHalfConfig, MaybeHalfConfig};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct GlobalConfig {
-
     #[serde(default)]
     pub dns_mode: DnsMode,
 

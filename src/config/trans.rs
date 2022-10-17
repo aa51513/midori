@@ -42,6 +42,8 @@ impl Display for TransportConfig {
 #[derive(Debug, Serialize, Deserialize)]
 pub struct WebSocketConfig {
     pub path: String,
+
+    #[serde(default)]
     pub host: String,
 }
 

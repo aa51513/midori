@@ -68,7 +68,6 @@ impl From<DnsProtocol> for Protocol {
 
 impl From<DnsServerConfig> for NameServerConfig {
     fn from(x: DnsServerConfig) -> NameServerConfig {
-        println!("x.addr is {}",x.addr);
         let socket_addr: SocketAddr = x.addr
                 .parse()
                 .expect("Unable to parse socket address");
