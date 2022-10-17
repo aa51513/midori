@@ -14,11 +14,11 @@ use default value: transport = plain, tls = none
   "endpoints": [
     {
       "listen": {
-        "addr": "/home/midori/local.sock",
+        "addr": "/home/roma/local.sock",
         "net": "uds"
       },
       "remote": {
-        "addr": "/home/midori/remote.sock",
+        "addr": "/home/roma/remote.sock",
         "net": "uds"
       }
     }

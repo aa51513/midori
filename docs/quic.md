@@ -21,7 +21,7 @@ max number of concurrent streams for each connection.
 
 Also See: [TLS][tls-doc-url]
 
-[tls-doc-url]: https://github.com/zephyrchien/midori/blob/master/docs/tls.md
+[tls-doc-url]: https://github.com/aa51513/roma/blob/master/docs/tls.md
 
 ```shell
 "remote": {
