@@ -19,11 +19,11 @@ jobs:
           - x86_64-pc-windows-gnu
         include:
           - target: x86_64-unknown-linux-gnu
-            output: midori
+            output: roma
           - target: x86_64-unknown-linux-musl
-            output: midori
+            output: roma
           - target: x86_64-pc-windows-gnu
-            output: midori.exe
+            output: roma.exe
     steps:
       - uses: actions/checkout@v2
       - name: install toolchain
@@ -41,7 +41,7 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: midori-${{ matrix.target }}
+          name: roma-${{ matrix.target }}
           path: target/${{ matrix.target }}/release/${{ matrix.output }}
   build-apple:
     runs-on: macos-latest
@@ -66,6 +66,6 @@ jobs:
       - name: upload
         uses: actions/upload-artifact@v2
         with:
-          name: midori-${{ matrix.target }}
-          path: target/${{ matrix.target }}/release/midori
+          name: roma-${{ matrix.target }}
+          path: target/${{ matrix.target }}/release/roma
 
