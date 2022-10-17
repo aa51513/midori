@@ -15,11 +15,11 @@ jobs:
           - x86_64-pc-windows-gnu
         include:
           - target: x86_64-unknown-linux-gnu
-            output: midori
+            output: roma
           - target: x86_64-unknown-linux-musl
-            output: midori
+            output: roma
           - target: x86_64-pc-windows-gnu
-            output: midori.exe
+            output: roma.exe
     steps:
       - uses: actions/checkout@v2
       - name: install toolchain
@@ -38,8 +38,8 @@ jobs:
         run: |
           mkdir -p release-${{ matrix.target }}
           cd release-${{ matrix.target }}
-          tar -C ../target/${{ matrix.target }}/release -zcf midori-${{ matrix.target }}.tar.gz ${{ matrix.output }}
-          sha256sum midori-${{ matrix.target }}.tar.gz > midori-${{ matrix.target }}.sha256
+          tar -C ../target/${{ matrix.target }}/release -zcf roma-${{ matrix.target }}.tar.gz ${{ matrix.output }}
+          sha256sum roma-${{ matrix.target }}.tar.gz > roma-${{ matrix.target }}.sha256
       - name: release
         uses: softprops/action-gh-release@v1
         env:
@@ -70,8 +70,8 @@ jobs:
         run: |
           mkdir -p release-${{ matrix.target }}
           cd release-${{ matrix.target }}
-          tar -C ../target/${{ matrix.target }}/release/ -zcf midori-${{ matrix.target }}.tar.gz midori
-          shasum -a 256 midori-${{ matrix.target }}.tar.gz > midori-${{ matrix.target }}.sha256
+          tar -C ../target/${{ matrix.target }}/release/ -zcf roma-${{ matrix.target }}.tar.gz roma
+          shasum -a 256 roma-${{ matrix.target }}.tar.gz > roma-${{ matrix.target }}.sha256
       - name: release
         uses: softprops/action-gh-release@v1
         env:
