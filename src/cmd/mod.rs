@@ -1,4 +1,4 @@
-use clap::{Arg, App, SubCommand};
+use clap::{Arg, ArgAction, Command};
 use crate::utils::{VERSION, NAV_VERSION};
 
 mod nav;
@@ -11,26 +11,26 @@ pub enum CmdInput {
 }
 
 pub fn scan() -> CmdInput {
-    let matches = App::new("Roma")
+    let matches = Command::new("Roma")
         .version(VERSION).long_version("0.6.4 - a2132c")
         .about("A multi-protocol network relay")
         .author("aa51513 <aa51513@github.com>")
         .arg(
-            Arg::with_name("config")
-                .short("c")
+            Arg::new("config")
+                .short('c')
                 .long("config")
                 .value_name("json config file")
                 .help("specify a config file in json format")
-                .takes_value(true),
+                .action(ArgAction::Set),
         )
         .subcommand(
-             SubCommand::with_name("nav")
+            Command::new("nav")
                             .about("An Interactive config editor")
                             .version(NAV_VERSION)
                             .author("aa51513 <aa51513@github.com>"),
         )
         .get_matches();
-    if let Some(config) = matches.value_of("config") {
+    if let Some(config) = matches.get_one::<String>("config") {
         return CmdInput::Config(config.to_string());
     }
     if matches.subcommand_matches("nav").is_some() {
