@@ -25,7 +25,7 @@ impl<'a> tungstenite::client::IntoClientRequest for Request<'a> {
         let builder = http::Request::builder()
             .method("GET")
             .uri(self.uri)
-            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:105.0) Gecko/20100101 Firefox/105.0")
+            .header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/109.0")
             .header("Host", self.host);
         Ok(builder.body(())?)
     }
@@ -41,7 +41,7 @@ pub struct Connector<T: AsyncConnect> {
 impl<T: AsyncConnect> Connector<T> {
     pub fn new(cc: T, path: String,host: String) -> Self {
         let default_authority = cc.addr().to_string();
-        let authority = if String::is_empty(&host) { <std::string::String as Borrow<str>>::borrow(&host).to_string() } else { default_authority };
+        let authority = if String::is_empty(&host) { default_authority } else { <std::string::String as Borrow<str>>::borrow(&host).to_string() };
         let uri = Uri::builder()
             .scheme(Self::SCHEME)
             .authority(authority)
