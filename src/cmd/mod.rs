@@ -12,7 +12,7 @@ pub enum CmdInput {
 
 pub fn scan() -> CmdInput {
     let matches = Command::new("Roma")
-        .version(VERSION).long_version("0.6.5 - a2132c")
+        .version(VERSION).long_version("0.6.4 - a2132c")
         .about("A multi-protocol network relay")
         .author("aa51513 <aa51513@github.com>")
         .arg(
