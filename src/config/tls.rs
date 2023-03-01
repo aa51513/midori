@@ -40,7 +40,7 @@ pub mod enable_tls {
 
     use webpki::DnsNameRef;
     use rustls::{ClientConfig, ServerConfig};
-    use rustls::internal::msgs::enums::ProtocolVersion;
+    use rustls::ProtocolVersion;
 
     use crate::utils::{self, must, CommonAddr, NOT_A_DNS_NAME};
     use crate::transport::tls;
@@ -48,12 +48,14 @@ pub mod enable_tls {
 
     // default values
     fn def_true() -> bool { true }
+    fn def_false() -> bool { false }
 
     fn def_roots_str() -> String { "firefox".to_string() }
 
     // TLS Client
     #[derive(Debug, Serialize, Deserialize)]
     pub struct TLSClientConfig {
+        #[serde(default = "def_false")]
         pub skip_verify: bool,
 
         #[serde(default = "def_true")]

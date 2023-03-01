@@ -38,7 +38,7 @@ impl AsyncAccept for Acceptor<()> {
 
     async fn accept_base(&self) -> Result<(Self::Base, SocketAddr)> {
         // new connection
-        let connecting = (&self).lis.accept().await.ok_or_else(|| {
+        let connecting = (&self.lis).accept().await.ok_or_else(|| {
             Error::new(ErrorKind::ConnectionAborted, "connection abort")
         })?;
 
@@ -60,8 +60,8 @@ impl AsyncAccept for Acceptor<()> {
 // Mux
 #[async_trait]
 impl<C> AsyncAccept for Acceptor<C>
-where
-    C: AsyncConnect + 'static,
+    where
+        C: AsyncConnect + 'static,
 {
     const TRANS: Transport = Transport::QUIC;
 
@@ -75,7 +75,7 @@ where
 
     async fn accept_base(&self) -> Result<(Self::Base, SocketAddr)> {
         // new connection
-        let connecting = (&self).lis.accept().await.expect("connection abort");
+        let connecting = (&self.lis).accept().await.expect("connection abort");
 
         // early data
         let new_conn = match connecting.into_0rtt() {
@@ -96,8 +96,8 @@ where
 }
 
 async fn handle_mux_conn<C>(cc: Arc<C>, connection: Connection)
-where
-    C: AsyncConnect + 'static,
+    where
+        C: AsyncConnect + 'static,
 {
     use crate::io::bidi_copy_with_stream;
     loop {
@@ -106,16 +106,16 @@ where
                 warn!("no more quic-mux stream");
             }
             Ok((send, recv)) =>{
-                    info!(
+                info!(
                         "new quic stream[reuse] <-> {}[{}]",
                         cc.addr(),
                         C::SCHEME
                     );
-                    tokio::spawn(bidi_copy_with_stream(
-                        cc.clone(),
-                        QuicStream::new(send, recv),
-                    ));
-                }
+                tokio::spawn(bidi_copy_with_stream(
+                    cc.clone(),
+                    QuicStream::new(send, recv),
+                ));
+            }
         }
     }
     /*
@@ -157,7 +157,7 @@ impl AsyncAccept for RawAcceptor {
 
     async fn accept_base(&self) -> Result<(Self::Base, SocketAddr)> {
         // new connection
-        let connecting = (&self).lis.accept().await.expect("connection abort");
+        let connecting = (&self.lis).accept().await.expect("connection abort");
 
         // early data
         let new_conn = match connecting.into_0rtt() {
