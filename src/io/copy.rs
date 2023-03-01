@@ -16,7 +16,9 @@ where
         if n == 0 {
             break;
         };
-        w.write(&buf[..n]).await?;
+        let write_bytes_count = w.write(&buf[..n]).await?;
+        if write_bytes_count!=n {
+        }
     }
     w.shutdown().await?;
     Ok(())
