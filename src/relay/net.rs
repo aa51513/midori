@@ -169,9 +169,9 @@ pub mod quic_ext {
             must!(utils::load_keys(&tlsc.key), "load {}", &tlsc.key);
         let key = keys.remove(0);
         let server_config = ServerConfig::with_single_cert(certs,key).expect("bad cert file");
-        let (_, incoming) = Endpoint::server(server_config, *bind_addr).expect("failed to bind");
+        let endpoint:Endpoint = Endpoint::server(server_config, *bind_addr).expect("failed to bind");
         info!("bind {}[quic]", &bind_addr);
-        quic::RawAcceptor::new(incoming, sockaddr)
+        quic::RawAcceptor::new(endpoint, sockaddr)
     }
 }
 

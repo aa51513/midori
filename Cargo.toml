@@ -40,7 +40,7 @@ serde_json = "1"
 
 # log
 log = "0.4"
-env_logger = "0.9"
+env_logger = "0.10.0"
 
 # rt
 tokio = { version = "1", features = ["rt", "rt-multi-thread", "io-util", "net"] }
@@ -58,13 +58,13 @@ rustls = { version = "0.20", features = ["dangerous_configuration", "quic"], opt
 rustls-pemfile = "1"
 
 # ws
-tokio-tungstenite = { version = "0.17", optional = true }
+tokio-tungstenite = { version = "0.18.0", optional = true }
 httparse = "1.8"
 
 # h2
 h2 = { version = "0.3", optional = true }
 
 # quic
-quinn = { version = "0.8", default-features = true, features = ["rustls","native-certs","ring"], optional = true }
+quinn = { version = "0.9.3", default-features = true, features = ["rustls","native-certs","ring"], optional = true }
 
 
